@@ -1,11 +1,11 @@
 import 'package:flutter/material.dart';
+import 'package:new_project/screens/personal_info_screen.dart';
 import 'package:shared_preferences/shared_preferences.dart';
-import 'dart:convert';
 import '../services/api_service.dart';
 import '../models/wishlist_item.dart';
 import 'auth/login_screen.dart';
-import 'edit_profile_screen.dart';
 import 'notification_screen.dart';
+import 'orders_screen.dart';
 
 class ProfileScreen extends StatefulWidget {
   const ProfileScreen({Key? key}) : super(key: key);
@@ -37,11 +37,15 @@ class _ProfileScreenState extends State<ProfileScreen> with SingleTickerProvider
   
   Future<void> _loadUserData() async {
     final SharedPreferences prefs = await SharedPreferences.getInstance();
-    final int userId = prefs.getInt('user_id') ?? 1; // Get user ID from SharedPreferences
+    final int userId = prefs.getInt('id') ?? 0; // Changed from 1 to 0 for consistency
     
     try {
       // Fetch wishlist from API
       final List<WishlistItem> wishlist = await _apiService.getWishlist(userId);
+      
+      // Fetch order count from API
+      final orderResponse = await _apiService.getOrders(userId);
+      final List<dynamic> orders = orderResponse.data as List<dynamic>;
       
       setState(() {
         userName = prefs.getString('name') ?? "User";
@@ -52,16 +56,18 @@ class _ProfileScreenState extends State<ProfileScreen> with SingleTickerProvider
         // Set wishlist count from API response
         wishlistItems = wishlist.length;
         
-        // You can also load totalOrders from your data source
+        // Set order count from API response
+        totalOrders = orders.length;
       });
     } catch (e) {
-      print('Error loading wishlist: $e');
+      print('Error loading user data: $e');
       setState(() {
         userName = prefs.getString('name') ?? "User";
         userEmail = prefs.getString('email') ?? "No email";
         userPhone = prefs.getString('phone') ?? "No phone";
         userAddress = prefs.getString('address') ?? "No address";
         wishlistItems = 0; // Default to 0 if there's an error
+        totalOrders = 0; // Default to 0 if there's an error
       });
     }
   }
@@ -103,30 +109,13 @@ class _ProfileScreenState extends State<ProfileScreen> with SingleTickerProvider
                 style: TextStyle(
                   fontWeight: FontWeight.w600,
                   fontSize: 20,
-                  color: theme.textTheme.titleLarge?.color,
+                  color: Colors.green[700],
                   letterSpacing: 0.2,
                 ),
               ),
               backgroundColor: Colors.white,
               elevation: 0,
               shadowColor: Colors.transparent,
-              actions: [
-                IconButton(
-                  icon: Icon(
-                    Icons.edit_outlined,
-                    color: primaryColor,
-                    size: 22,
-                  ),
-                  onPressed: () {
-                    _animationController.forward(from: 0.0);
-                    // Navigate to edit profile screen
-                    Navigator.push(
-                      context,
-                      MaterialPageRoute(builder: (context) => const EditProfileScreen()),
-                    ).then((_) => _loadUserData()); // Reload data when returning
-                  },
-                ),
-              ],
               bottom: PreferredSize(
                 preferredSize: const Size.fromHeight(1),
                 child: Container(
@@ -276,16 +265,28 @@ class _ProfileScreenState extends State<ProfileScreen> with SingleTickerProvider
                     icon: Icons.person_outline,
                     title: 'Personal Information',
                     subtitle: 'Manage your personal details',
-                    onTap: () {},
+                    onTap: () {
+                      _animationController.forward(from: 0.0);
+                      // Navigate to edit profile screen
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(builder: (context) => PersonalInfoScreen()),
+                      ).then((_) => _loadUserData()); // Reload data when returning
+                    },
                   ),
                   
                   _buildDivider(),
                   
                   _buildSettingItem(
                     icon: Icons.location_on_outlined,
-                    title: 'Addresses',
-                    subtitle: 'Your shipping and billing addresses',
-                    onTap: () {},
+                    title: 'Order History',
+                    subtitle: 'View your order history',
+                    onTap: () {
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(builder: (context) => OrdersScreen()),
+                      );
+                    },
                   ),
                   
                   _buildDivider(),
@@ -335,52 +336,115 @@ class _ProfileScreenState extends State<ProfileScreen> with SingleTickerProvider
                     onTap: () {},
                   ),
                   
-                  const SizedBox(height: 32),
+                  const SizedBox(height: 16),
                   
                   // Logout Option
-                  Padding(
-                    padding: const EdgeInsets.symmetric(horizontal: 16),
-                    child: ElevatedButton.icon(
-                      onPressed: () {
-                        // Show confirmation dialog
-                        showDialog(
-                          context: context,
-                          builder: (context) => AlertDialog(
-                            title: const Text('Logout'),
-                            content: const Text('Are you sure you want to logout?'),
-                            actions: [
-                              TextButton(
-                                onPressed: () => Navigator.pop(context),
-                                child: const Text('Cancel'),
-                              ),
-                              TextButton(
-                                onPressed: () {
-                                  Navigator.pop(context);
-                                  _logout();
-                                },
-                                child: const Text('Logout'),
-                              ),
-                            ],
+                  InkWell(
+                    onTap: () {
+                      // Show confirmation dialog
+                      showDialog(
+                        context: context,
+                        builder: (context) => AlertDialog(
+                          title: const Text('Logout'),
+                          content: const Text('Are you sure you want to logout?'),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(16),
                           ),
-                        );
-                      },
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: Colors.red.shade50,
-                        foregroundColor: Colors.red.shade700,
-                        elevation: 0,
-                        padding: const EdgeInsets.symmetric(vertical: 12),
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(12),
+                          titleTextStyle: TextStyle(
+                            fontSize: 18,
+                            fontWeight: FontWeight.bold,
+                            color: Colors.grey.shade800,
+                          ),
+                          contentTextStyle: TextStyle(
+                            fontSize: 15,
+                            color: Colors.grey.shade600,
+                          ),
+                          actions: [
+                            TextButton(
+                              onPressed: () => Navigator.pop(context),
+                              child: Text(
+                                'Cancel',
+                                style: TextStyle(
+                                  color: Colors.grey.shade700,
+                                  fontWeight: FontWeight.w500,
+                                ),
+                              ),
+                            ),
+                            ElevatedButton(
+                              onPressed: () {
+                                Navigator.pop(context);
+                                _logout();
+                              },
+                              style: ElevatedButton.styleFrom(
+                                backgroundColor: Colors.red.shade600,
+                                foregroundColor: Colors.white,
+                                elevation: 0,
+                                shape: RoundedRectangleBorder(
+                                  borderRadius: BorderRadius.circular(8),
+                                ),
+                                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                              ),
+                              child: const Text(
+                                'Logout',
+                                style: TextStyle(
+                                  fontWeight: FontWeight.w600,
+                                ),
+                              ),
+                            ),
+                          ],
                         ),
-                      ),
-                      icon: Icon(Icons.logout, color: Colors.red.shade700),
-                      label: Text(
-                        'Logout',
-                        style: TextStyle(
-                          fontSize: 16,
-                          fontWeight: FontWeight.w600,
-                          color: Colors.red.shade700,
-                        ),
+                      );
+                    },
+                    splashColor: Colors.red.withOpacity(0.05),
+                    highlightColor: Colors.red.withOpacity(0.05),
+                    child: Padding(
+                      padding: const EdgeInsets.symmetric(vertical: 14, horizontal: 16),
+                      child: Row(
+                        children: [
+                          Container(
+                            padding: const EdgeInsets.all(10),
+                            decoration: BoxDecoration(
+                              color: Colors.red.withOpacity(0.1),
+                              borderRadius: BorderRadius.circular(10),
+                            ),
+                            child: Icon(
+                              Icons.logout,
+                              size: 20,
+                              color: Colors.red.shade700,
+                            ),
+                          ),
+                          const SizedBox(width: 16),
+                          Expanded(
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text(
+                                  'Logout',
+                                  style: TextStyle(
+                                    fontSize: 15,
+                                    fontWeight: FontWeight.w500,
+                                    color: Colors.red.shade800,
+                                    height: 1.3,
+                                  ),
+                                ),
+                                const SizedBox(height: 3),
+                                Text(
+                                  'Sign out from your account',
+                                  style: TextStyle(
+                                    fontSize: 13,
+                                    color: Colors.red.shade300,
+                                    height: 1.2,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                          Icon(
+                            Icons.chevron_right,
+                            color: Colors.red.shade400,
+                            size: 20,
+                          ),
+                        ],
                       ),
                     ),
                   ),

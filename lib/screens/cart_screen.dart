@@ -5,6 +5,7 @@ import '../models/cart_item.dart';
 import 'package:flutter/services.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:shimmer/shimmer.dart';
+import 'package:new_project/screens/checkout_screen.dart';
 
 class CartScreen extends StatefulWidget {
   const CartScreen({Key? key}) : super(key: key);
@@ -234,39 +235,85 @@ class _CartScreenState extends State<CartScreen> {
               children: [
                 if (_showSwipeHint && cartItems.isNotEmpty)
                   Container(
-                    padding: EdgeInsets.symmetric(vertical: 8, horizontal: 16),
+                    padding: EdgeInsets.symmetric(vertical: 10, horizontal: 16),
                     margin: EdgeInsets.all(8),
                     decoration: BoxDecoration(
                       color: Colors.blue.shade50,
                       borderRadius: BorderRadius.circular(8),
                       border: Border.all(color: Colors.blue.shade100),
                     ),
-                    child: Row(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        Icon(
-                          Icons.swipe_left_alt,
-                          color: Colors.blue.shade700,
-                          size: 20,
-                        ),
-                        SizedBox(width: 8),
-                        Expanded(
-                          child: Text(
-                            'Swipe items left to remove them from cart',
-                            style: TextStyle(
+                        Row(
+                          children: [
+                            Icon(
+                              Icons.info_outline,
                               color: Colors.blue.shade700,
-                              fontSize: 13,
+                              size: 20,
                             ),
-                          ),
+                            SizedBox(width: 8),
+                            Expanded(
+                              child: Text(
+                                'Swipe Gestures',
+                                style: TextStyle(
+                                  color: Colors.blue.shade700,
+                                  fontSize: 14,
+                                  fontWeight: FontWeight.bold,
+                                ),
+                              ),
+                            ),
+                            IconButton(
+                              padding: EdgeInsets.zero,
+                              constraints: BoxConstraints(),
+                              icon: Icon(
+                                Icons.close,
+                                size: 16,
+                                color: Colors.blue.shade700,
+                              ),
+                              onPressed: _dismissHint,
+                            ),
+                          ],
                         ),
-                        IconButton(
-                          padding: EdgeInsets.zero,
-                          constraints: BoxConstraints(),
-                          icon: Icon(
-                            Icons.close,
-                            size: 16,
-                            color: Colors.blue.shade700,
-                          ),
-                          onPressed: _dismissHint,
+                        SizedBox(height: 6),
+                        Row(
+                          children: [
+                            Icon(
+                              Icons.swipe_left_alt,
+                              color: Colors.red.shade400,
+                              size: 18,
+                            ),
+                            SizedBox(width: 8),
+                            Expanded(
+                              child: Text(
+                                'Swipe left to remove items from cart',
+                                style: TextStyle(
+                                  color: Colors.grey[700],
+                                  fontSize: 13,
+                                ),
+                              ),
+                            ),
+                          ],
+                        ),
+                        SizedBox(height: 4),
+                        Row(
+                          children: [
+                            Icon(
+                              Icons.swipe_right_alt,
+                              color: Colors.green.shade700,
+                              size: 18,
+                            ),
+                            SizedBox(width: 8),
+                            Expanded(
+                              child: Text(
+                                'Swipe right to quickly place an order',
+                                style: TextStyle(
+                                  color: Colors.grey[700],
+                                  fontSize: 13,
+                                ),
+                              ),
+                            ),
+                          ],
                         ),
                       ],
                     ),
@@ -280,60 +327,155 @@ class _CartScreenState extends State<CartScreen> {
                       final currentQuantity = _quantities[item.id] ?? item.quantity;
                       return Dismissible(
                         key: Key(item.id.toString()),
-                        direction: DismissDirection.endToStart,
+                        direction: DismissDirection.horizontal,
                         confirmDismiss: (direction) async {
-                          bool? result = await showDialog(
-                            context: context,
-                            builder: (BuildContext context) {
-                              return AlertDialog(
-                                shape: RoundedRectangleBorder(
-                                  borderRadius: BorderRadius.circular(12),
-                                ),
-                                title: Text(
-                                  'Remove Item',
-                                  style: TextStyle(
-                                    fontSize: 18,
-                                    fontWeight: FontWeight.bold,
+                          if (direction == DismissDirection.endToStart) {
+                            bool? result = await showDialog(
+                              context: context,
+                              builder: (BuildContext context) {
+                                return AlertDialog(
+                                  shape: RoundedRectangleBorder(
+                                    borderRadius: BorderRadius.circular(12),
                                   ),
-                                ),
-                                content: Text(
-                                  'Are you sure you want to remove this item from your cart?',
-                                  style: TextStyle(
-                                    fontSize: 15,
-                                    color: Colors.grey[700],
-                                  ),
-                                ),
-                                actions: [
-                                  TextButton(
-                                    onPressed: () => Navigator.of(context).pop(false),
-                                    child: Text(
-                                      'Cancel',
-                                      style: TextStyle(
-                                        color: Colors.grey[700],
-                                        fontWeight: FontWeight.w500,
-                                      ),
+                                  title: Text(
+                                    'Remove Item',
+                                    style: TextStyle(
+                                      fontSize: 18,
+                                      fontWeight: FontWeight.bold,
                                     ),
                                   ),
-                                  TextButton(
-                                    onPressed: () => Navigator.of(context).pop(true),
-                                    child: Text(
-                                      'Remove',
-                                      style: TextStyle(
-                                        color: Colors.red[400],
-                                        fontWeight: FontWeight.bold,
-                                      ),
+                                  content: Text(
+                                    'Are you sure you want to remove this item from your cart?',
+                                    style: TextStyle(
+                                      fontSize: 15,
+                                      color: Colors.grey[700],
                                     ),
                                   ),
-                                ],
-                              );
-                            },
-                          );
-                          return result ?? false;
+                                  actions: [
+                                    TextButton(
+                                      onPressed: () => Navigator.of(context).pop(false),
+                                      child: Text(
+                                        'Cancel',
+                                        style: TextStyle(
+                                          color: Colors.grey[700],
+                                          fontWeight: FontWeight.w500,
+                                        ),
+                                      ),
+                                    ),
+                                    TextButton(
+                                      onPressed: () => Navigator.of(context).pop(true),
+                                      child: Text(
+                                        'Remove',
+                                        style: TextStyle(
+                                          color: Colors.red[400],
+                                          fontWeight: FontWeight.bold,
+                                        ),
+                                      ),
+                                    ),
+                                  ],
+                                );
+                              },
+                            );
+                            return result ?? false;
+                          } else {
+                            bool? result = await showDialog(
+                              context: context,
+                              builder: (BuildContext context) {
+                                return AlertDialog(
+                                  shape: RoundedRectangleBorder(
+                                    borderRadius: BorderRadius.circular(12),
+                                  ),
+                                  title: Text(
+                                    'Place Order',
+                                    style: TextStyle(
+                                      fontSize: 18,
+                                      fontWeight: FontWeight.bold,
+                                    ),
+                                  ),
+                                  content: Text(
+                                    'Would you like to place an order for this item?',
+                                    style: TextStyle(
+                                      fontSize: 15,
+                                      color: Colors.grey[700],
+                                    ),
+                                  ),
+                                  actions: [
+                                    TextButton(
+                                      onPressed: () => Navigator.of(context).pop(false),
+                                      child: Text(
+                                        'Cancel',
+                                        style: TextStyle(
+                                          color: Colors.grey[700],
+                                          fontWeight: FontWeight.w500,
+                                        ),
+                                      ),
+                                    ),
+                                    TextButton(
+                                      onPressed: () => Navigator.of(context).pop(true),
+                                      child: Text(
+                                        'Place Order',
+                                        style: TextStyle(
+                                          color: Colors.green[700],
+                                          fontWeight: FontWeight.bold,
+                                        ),
+                                      ),
+                                    ),
+                                  ],
+                                );
+                              },
+                            );
+                            return result ?? false;
+                          }
                         },
-                        onDismissed: (direction) {
-                          _deleteItem(item);
+                        onDismissed: (direction) async {
+                          if (direction == DismissDirection.endToStart) {
+                            _deleteItem(item);
+                          } else {
+                            try {
+                              final prefs = await SharedPreferences.getInstance();
+                              int userId = prefs.getInt('id') ?? 0;
+                              int paymentId = 230;
+                              await _apiService.submitOrder(userId, item.productId, paymentId);
+                              
+                              // Remove the ordered item from the cart
+                              await _apiService.deleteCartItem(item.productId);
+                              
+                              // Check if this was the last item
+                              final updatedItems = await _apiService.getCart();
+                              if (updatedItems.isEmpty) {
+                                setState(() {
+                                  _cartItems = Future.value([]);
+                                });
+                              } else {
+                                _loadCart(); // Reload the cart
+                              }
+                              
+                              ScaffoldMessenger.of(context).showSnackBar(
+                                SnackBar(
+                                  content: Text('Order placed successfully!'),
+                                  backgroundColor: Colors.green[700],
+                                ),
+                              );
+                            } catch (e) {
+                              ScaffoldMessenger.of(context).showSnackBar(
+                                SnackBar(
+                                  content: Text('Failed to place order: $e'),
+                                  backgroundColor: Colors.red,
+                                ),
+                              );
+                            }
+                          }
                         },
                         background: Container(
+                          alignment: Alignment.centerLeft,
+                          padding: EdgeInsets.only(left: 20.0),
+                          color: Colors.green[600],
+                          child: Icon(
+                            Icons.shopping_bag_outlined,
+                            color: Colors.white,
+                          ),
+                        ),
+                        secondaryBackground: Container(
                           alignment: Alignment.centerRight,
                           padding: EdgeInsets.only(right: 20.0),
                           color: Colors.red[400],
@@ -514,7 +656,15 @@ class _CartScreenState extends State<CartScreen> {
                         SizedBox(height: 8),
                         ElevatedButton(
                           onPressed: () {
-                            // TODO: Implement checkout
+                            Navigator.push(
+                              context,
+                              MaterialPageRoute(
+                                builder: (context) => CheckoutScreen(
+                                  cartItems: cartItems,
+                                  total: _total,
+                                ),
+                              ),
+                            );
                           },
                           style: ElevatedButton.styleFrom(
                             backgroundColor: Colors.green.shade700,

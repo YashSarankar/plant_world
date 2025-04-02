@@ -1,8 +1,10 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:shimmer/shimmer.dart';
 import '../models/category.dart';
 import '../services/api_service.dart';
 import 'subcategory_screen.dart';
+
 
 class AllCategoriesScreen extends StatefulWidget {
   final bool showBackButton;
@@ -26,6 +28,12 @@ class _AllCategoriesScreenState extends State<AllCategoriesScreen> {
   @override
   void initState() {
     super.initState();
+    SystemChrome.setSystemUIOverlayStyle(SystemUiOverlayStyle(
+      statusBarColor: Colors.black,
+      statusBarIconBrightness: Brightness.dark,
+      systemNavigationBarDividerColor: Colors.transparent,
+      systemNavigationBarColor: Colors.black,
+    ));
     _categories = _fetchAndSetCategories();
     _searchController.addListener(_filterCategories);
   }
@@ -254,7 +262,7 @@ class _AllCategoriesScreenState extends State<AllCategoriesScreen> {
                               image: NetworkImage(
                                 "https://skm-mart.actthost.com/uploads/category/${category.image}",
                               ),
-                              fit: BoxFit.cover,
+                              fit: BoxFit.fill,
                             ),
                           ),
                         ),

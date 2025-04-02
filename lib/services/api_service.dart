@@ -8,6 +8,7 @@ import '../models/product_detail.dart';
 import '../models/wishlist_item.dart';
 import '../models/cart_item.dart';
 import '../models/slider.dart';
+import '../models/order_model.dart';
 
 class ApiService {
   static const String _baseUrl = 'https://plant-world.actthost.com/api';
@@ -364,6 +365,42 @@ class ApiService {
       }
     } catch (e) {
       throw Exception('Error fetching notifications: $e');
+    }
+  }
+
+  Future<void> submitOrder(int userId, int productId, int paymentId) async {
+    final response = await http.post(
+      Uri.parse('https://plant-world.actthost.com/api/submitOrderData'),
+      headers: {'Content-Type': 'application/json'},
+      body: jsonEncode({
+        'user_id': userId,
+        'product_id': productId,
+        'payment_id': paymentId,
+      }),
+    );
+
+    if (response.statusCode != 200) {
+      throw Exception('Failed to submit order: ${response.body}');
+    }
+  }
+
+  Future<OrderResponse> getOrders(int userId) async {
+    try {
+      final response = await http.post(
+        Uri.parse('https://plant-world.actthost.com/api/getOrderData'),
+        headers: {'Content-Type': 'application/json'},
+        body: json.encode({
+          'user_id': userId,
+        }),
+      );
+
+      if (response.statusCode == 200) {
+        return OrderResponse.fromJson(json.decode(response.body));
+      } else {
+        throw Exception('Failed to load orders: ${response.statusCode}');
+      }
+    } catch (e) {
+      throw Exception('Failed to load orders: $e');
     }
   }
 } 

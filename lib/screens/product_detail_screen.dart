@@ -1,10 +1,10 @@
 import 'package:flutter/material.dart';
-import 'package:new_project/screens/cart_screen.dart';
 import '../services/api_service.dart';
 import '../models/product_detail.dart';
 import 'package:flutter/services.dart';
 import 'package:share_plus/share_plus.dart'; // Add this package for sharing
 import 'package:new_project/screens/main_screen.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 class ProductDetailScreen extends StatefulWidget {
   final int categoryId;
@@ -24,11 +24,22 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
   int _currentImageIndex = 0;
   bool _isDescriptionExpanded = false;
   bool _isSpecificationsExpanded = false;
+  
+  // Declare a state variable for userId
+  int userId = 0; // Default value
 
   @override
   void initState() {
     super.initState();
+    _initializeUserId();
     _productDetail = _apiService.fetchProductById(widget.categoryId, widget.subcategoryId, widget.productId);
+  }
+
+  Future<void> _initializeUserId() async {
+    SharedPreferences prefs = await SharedPreferences.getInstance();
+    setState(() {
+      userId = prefs.getInt('id') ?? 0; // Update the state variable
+    });
   }
 
   Future<void> _addToCart(int productId) async {
@@ -413,8 +424,25 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
                       SizedBox(width: 12),
                       Expanded(
                         child: ElevatedButton.icon(
-                          onPressed: () {
-                            // Add functionality for purchasing directly
+                          onPressed: () async {
+                            try {
+                              // Dummy payment ID
+                              int paymentId = 230; 
+                              await _apiService.submitOrder(userId, product.id, paymentId); // Use the state variable
+                              ScaffoldMessenger.of(context).showSnackBar(
+                                SnackBar(
+                                  content: Text('Order submitted successfully!'),
+                                  backgroundColor: Colors.green[700],
+                                ),
+                              );
+                            } catch (error) {
+                              ScaffoldMessenger.of(context).showSnackBar(
+                                SnackBar(
+                                  content: Text('Failed to submit order: $error'),
+                                  backgroundColor: Colors.red,
+                                ),
+                              );
+                            }
                           },
                           style: ElevatedButton.styleFrom(
                             backgroundColor: Colors.green[800],

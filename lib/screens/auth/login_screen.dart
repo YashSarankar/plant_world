@@ -48,6 +48,10 @@ class _LoginScreenState extends State<LoginScreen> {
           await prefs.setString('pincode', user['pincode']);
           await prefs.setString('address', user['address']);
           await prefs.setInt('verified', user['verified']);
+          await prefs.setString('l_name', user['l_name'] ?? '');
+          await prefs.setString('image', user['image'] ?? '');
+          await prefs.setString('created_at', user['created_at']);
+          await prefs.setString('updated_at', user['updated_at']);
           
           // Navigate to MainScreen if login is successful
           Navigator.pushReplacement(
