@@ -1,9 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:new_project/services/api_service.dart';
+import 'package:share_plus/share_plus.dart';
 import '../models/product.dart'; // Import the Product model
 import '../screens/product_detail_screen.dart';
 import 'package:google_fonts/google_fonts.dart'; // Import Google Fonts for better typography
 import 'package:shimmer/shimmer.dart'; // Import for loading effects
+import 'package:shared_preferences/shared_preferences.dart'; // Import for shared preferences
 
 class ProductBySubCategoryScreen extends StatefulWidget {
   final int subCategoryId;
@@ -19,7 +21,6 @@ class _ProductBySubCategoryScreenState extends State<ProductBySubCategoryScreen>
   late Future<List<Product>> _products;
   List<Product> _loadedProducts = [];
   final ApiService _apiService = ApiService();
-  final int userId = 1;
   bool _isLoading = true;
   String _sortBy = 'Default';
   
@@ -32,11 +33,22 @@ class _ProductBySubCategoryScreenState extends State<ProductBySubCategoryScreen>
   final TextEditingController _searchController = TextEditingController();
   String _searchQuery = '';
 
+  int userId = 0; // Declare userId variable
+
   @override
   void initState() {
     super.initState();
+    _loadUserId();
     _loadProducts();
   }
+
+  void _loadUserId() async {
+    final SharedPreferences prefs = await SharedPreferences.getInstance();
+    userId = prefs.getInt('id') ?? 0; // Assign the userId from shared preferences
+  }
+
+  //take user id from shared preferences
+
 
   @override
   void dispose() {

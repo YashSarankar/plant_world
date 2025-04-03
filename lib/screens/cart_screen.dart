@@ -24,6 +24,7 @@ class _CartScreenState extends State<CartScreen> {
   @override
   void initState() {
     super.initState();
+    _cartItems = Future.value([]); // Initialize with an empty Future
     _loadCart();
     _checkFirstTime();
   }
@@ -46,18 +47,22 @@ class _CartScreenState extends State<CartScreen> {
 
   void _loadCart() async {
     try {
-      _cartItems = _apiService.getCart();
-      final items = await _cartItems;
+      final items = await _apiService.getCart();
       setState(() {
-        for (var item in items) {
-          _quantities[item.id] = item.quantity;
+        if (items.isEmpty) {
+          _quantities.clear(); // Clear quantities if cart is empty
+          _cartItems = Future.value([]); // Explicitly set to an empty list
+        } else {
+          _cartItems = Future.value(items); // Ensure _cartItems is always a valid Future
+          for (var item in items) {
+            _quantities[item.id] = item.quantity;
+          }
         }
         _calculateTotal(items);
       });
     } catch (e) {
-      // Handle the error by setting an empty list
       setState(() {
-        _cartItems = Future.value([]);
+        _cartItems = Future.value([]); // Ensure _cartItems is always a valid Future
       });
     }
   }
@@ -144,11 +149,19 @@ class _CartScreenState extends State<CartScreen> {
           builder: (context, snapshot) {
             if (snapshot.connectionState == ConnectionState.waiting) {
               return _buildShimmerLoading();
-            } 
-            
-            // Handle both error and empty cases
-            if (snapshot.hasError || !snapshot.hasData || snapshot.data!.isEmpty) {
-              print("Cart error or empty: ${snapshot.error}"); // Add logging for debugging
+            }
+
+            if (snapshot.hasError) {
+              print("Error loading cart: ${snapshot.error}");
+              return Center(
+                child: Text(
+                  'Failed to load cart. Please try again later.',
+                  style: TextStyle(color: Colors.red),
+                ),
+              );
+            }
+
+            if (!snapshot.hasData || snapshot.data!.isEmpty) {
               return Column(
                 children: [
                   Expanded(
@@ -429,6 +442,9 @@ class _CartScreenState extends State<CartScreen> {
                         },
                         onDismissed: (direction) async {
                           if (direction == DismissDirection.endToStart) {
+                            setState(() {
+                              cartItems.remove(item); // Remove the item immediately from the list
+                            });
                             _deleteItem(item);
                           } else {
                             try {
@@ -436,20 +452,24 @@ class _CartScreenState extends State<CartScreen> {
                               int userId = prefs.getInt('id') ?? 0;
                               int paymentId = 230;
                               await _apiService.submitOrder(userId, item.productId, paymentId);
-                              
+
                               // Remove the ordered item from the cart
+                              setState(() {
+                                cartItems.remove(item); // Remove the item immediately from the list
+                              });
                               await _apiService.deleteCartItem(item.productId);
-                              
-                              // Check if this was the last item
+
+                              // Reload the cart and check if it's empty
                               final updatedItems = await _apiService.getCart();
-                              if (updatedItems.isEmpty) {
-                                setState(() {
-                                  _cartItems = Future.value([]);
-                                });
-                              } else {
-                                _loadCart(); // Reload the cart
-                              }
-                              
+                              setState(() {
+                                if (updatedItems.isEmpty) {
+                                  _cartItems = Future.value([]); // Update to an empty list
+                                  _total = 0; // Reset total as cart is empty
+                                } else {
+                                  _loadCart(); // Reload the cart
+                                }
+                              });
+
                               ScaffoldMessenger.of(context).showSnackBar(
                                 SnackBar(
                                   content: Text('Order placed successfully!'),
@@ -911,4 +931,4 @@ class _CartScreenState extends State<CartScreen> {
       ],
     );
   }
-} 
+}

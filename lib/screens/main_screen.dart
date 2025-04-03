@@ -5,7 +5,6 @@ import 'package:new_project/screens/cart_screen.dart';
 import 'dart:ui';
 import 'package:new_project/screens/profile_screen.dart';
 import 'package:new_project/screens/wishlist_screen.dart';
-import 'package:new_project/screens/categories_screen.dart';
 import 'home_screen.dart';
 
 class MainScreen extends StatefulWidget {

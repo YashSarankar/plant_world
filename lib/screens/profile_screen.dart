@@ -21,6 +21,7 @@ class _ProfileScreenState extends State<ProfileScreen> with SingleTickerProvider
   String userAddress = "";
   int totalOrders = 0; // You can set this based on your logic
   int wishlistItems = 0; // You can set this based on your logic
+  bool _isDataLoading = true; // Add loading state variable for data
   
   late AnimationController _animationController;
   final ApiService _apiService = ApiService();
@@ -36,6 +37,10 @@ class _ProfileScreenState extends State<ProfileScreen> with SingleTickerProvider
   }
   
   Future<void> _loadUserData() async {
+    setState(() {
+      _isDataLoading = true; // Set data loading to true when starting to load data
+    });
+    
     final SharedPreferences prefs = await SharedPreferences.getInstance();
     final int userId = prefs.getInt('id') ?? 0; // Changed from 1 to 0 for consistency
     
@@ -58,6 +63,7 @@ class _ProfileScreenState extends State<ProfileScreen> with SingleTickerProvider
         
         // Set order count from API response
         totalOrders = orders.length;
+        _isDataLoading = false; // Set data loading to false after data is loaded
       });
     } catch (e) {
       print('Error loading user data: $e');
@@ -68,6 +74,7 @@ class _ProfileScreenState extends State<ProfileScreen> with SingleTickerProvider
         userAddress = prefs.getString('address') ?? "No address";
         wishlistItems = 0; // Default to 0 if there's an error
         totalOrders = 0; // Default to 0 if there's an error
+        _isDataLoading = false; // Set data loading to false in case of error
       });
     }
   }
@@ -188,38 +195,40 @@ class _ProfileScreenState extends State<ProfileScreen> with SingleTickerProvider
                         const SizedBox(width: 20),
                         // User info
                         Expanded(
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Text(
-                                userName,
-                                style: TextStyle(
-                                  fontWeight: FontWeight.w600,
-                                  fontSize: 20,
-                                  color: theme.textTheme.titleLarge?.color,
-                                  height: 1.1,
-                                ),
-                              ),
-                              const SizedBox(height: 12),
-                              _buildInfoRow(
-                                icon: Icons.email_outlined,
-                                text: userEmail,
-                              ),
-                              const SizedBox(height: 8),
-                              _buildInfoRow(
-                                icon: Icons.phone_outlined,
-                                text: userPhone,
-                              ),
-                              if (userAddress.isNotEmpty && userAddress != "No address")
-                                Padding(
-                                  padding: const EdgeInsets.only(top: 8),
-                                  child: _buildInfoRow(
-                                    icon: Icons.location_on_outlined,
-                                    text: userAddress,
+                          child: _isDataLoading // Check data loading state
+                            ? Text('...') // Show ellipsis while loading
+                            : Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Text(
+                                    userName,
+                                    style: TextStyle(
+                                      fontWeight: FontWeight.w600,
+                                      fontSize: 20,
+                                      color: theme.textTheme.titleLarge?.color,
+                                      height: 1.1,
+                                    ),
                                   ),
-                                ),
-                            ],
-                          ),
+                                  const SizedBox(height: 12),
+                                  _buildInfoRow(
+                                    icon: Icons.email_outlined,
+                                    text: userEmail,
+                                  ),
+                                  const SizedBox(height: 8),
+                                  _buildInfoRow(
+                                    icon: Icons.phone_outlined,
+                                    text: userPhone,
+                                  ),
+                                  if (userAddress.isNotEmpty && userAddress != "No address")
+                                    Padding(
+                                      padding: const EdgeInsets.only(top: 8),
+                                      child: _buildInfoRow(
+                                        icon: Icons.location_on_outlined,
+                                        text: userAddress,
+                                      ),
+                                    ),
+                                ],
+                              ),
                         ),
                       ],
                     ),

@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:new_project/screens/product_detail_screen.dart';
 import '../models/category.dart';
 import 'subcategory_screen.dart';
 import 'package:http/http.dart' as http;
@@ -9,6 +10,8 @@ import '../models/slider.dart';
 import 'all_categories_screen.dart';
 import 'cart_screen.dart';
 import 'main_screen.dart';
+import '../models/featured_product.dart';
+import 'all_products_screen.dart';
 
 class HomeScreen extends StatefulWidget {
 
@@ -23,6 +26,7 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
   late Future<List<Category>> _categories;
   late Future<List<SliderModel>> _sliders;
   int _cartItemCount = 0;
+  late Future<List<FeaturedProduct>> _featuredProducts;
   
   @override
   void initState() {
@@ -33,6 +37,7 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
     );
     _categories = _fetchCategories();
     _sliders = ApiService.fetchSliders();
+    _featuredProducts = ApiService.fetchFeaturedProducts();
     // Auto-scroll banner
     Future.delayed(const Duration(seconds: 1), () {
       // Start auto-scrolling the banner
@@ -154,83 +159,11 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  // Welcome message with custom container
-                  Container(
-                    margin: const EdgeInsets.fromLTRB(16, 16, 16, 8),
-                    padding: const EdgeInsets.all(16),
-                    decoration: BoxDecoration(
-                      gradient: LinearGradient(
-                        colors: [
-                          Colors.green.shade50,
-                          Colors.green.shade100.withOpacity(0.3),
-                        ],
-                        begin: Alignment.topLeft,
-                        end: Alignment.bottomRight,
-                      ),
-                      borderRadius: BorderRadius.circular(20),
-                      border: Border.all(color: Colors.green.shade100),
-                      boxShadow: [
-                        BoxShadow(
-                          color: Colors.green.shade100.withOpacity(0.5),
-                          blurRadius: 10,
-                          offset: const Offset(0, 5),
-                        ),
-                      ],
-                    ),
-                    child: Row(
-                      children: [
-                        Container(
-                          padding: const EdgeInsets.all(12),
-                          decoration: BoxDecoration(
-                            color: Colors.white,
-                            shape: BoxShape.circle,
-                            boxShadow: [
-                              BoxShadow(
-                                color: Colors.green.shade100.withOpacity(0.5),
-                                blurRadius: 8,
-                                offset: const Offset(0, 4),
-                              ),
-                            ],
-                          ),
-                          child: Icon(
-                            Icons.agriculture,
-                            color: Colors.green.shade700,
-                            size: 28,
-                          ),
-                        ),
-                        const SizedBox(width: 16),
-                        Expanded(
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Text(
-                                'Welcome to Plant World',
-                                style: TextStyle(
-                                  fontSize: 18,
-                                  color: Colors.green.shade800,
-                                  fontWeight: FontWeight.w600,
-                                ),
-                              ),
-                              const SizedBox(height: 4),
-                              Text(
-                                'Quality farming supplies for better yields',
-                                style: TextStyle(
-                                  fontSize: 14,
-                                  color: Colors.grey.shade700,
-                                ),
-                              ),
-                            ],
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-            
                   // Banner Carousel Section
                   Padding(
                     padding: const EdgeInsets.symmetric(vertical: 8),
                     child: AspectRatio(
-                      aspectRatio: 21 / 9,
+                      aspectRatio: 16 / 9,
                       child: Stack(
                         children: [
                           FutureBuilder<List<SliderModel>>(
@@ -256,6 +189,8 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
                                 itemCount: sliders.length,
                                 itemBuilder: (context, index) {
                                   final slider = sliders[index];
+                                  final imageUrl = "https://plant-world.actthost.com/uploads/homesliders/${slider.image}";
+                                  print('Banner Image URL: $imageUrl'); // Print the banner image URL
                                   return Container(
                                     margin: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
                                     decoration: BoxDecoration(
@@ -275,7 +210,7 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
                                         fit: StackFit.expand,
                                         children: [
                                           Image.network(
-                                            "https://plant-world.actthost.com/uploads/homesliders/${slider.image}",
+                                            imageUrl,
                                             fit: BoxFit.fill,
                                             loadingBuilder: (context, child, loadingProgress) {
                                               if (loadingProgress == null) return child;
@@ -493,6 +428,8 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
                           itemCount: categories.length,
                           itemBuilder: (context, index) {
                             final category = categories[index];
+                            final imageUrl = "https://plant-world.actthost.com/uploads/category/${category.image}";
+                            print('Category Image URL: $imageUrl'); // Print the category image URL
                             return GestureDetector(
                               onTap: () {
                                 Navigator.push(
@@ -546,7 +483,7 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
                                               borderRadius: BorderRadius.circular(15),
                                               image: DecorationImage(
                                                 image: NetworkImage(
-                                                  "https://skm-mart.actthost.com/uploads/category/${category.image}",
+                                                  imageUrl,
                                                 ),
                                                 fit: BoxFit.fill,
                                               ),
@@ -676,7 +613,10 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
                         ),
                         TextButton(
                           onPressed: () {
-                            // View all products
+                            Navigator.push(
+                              context,
+                              MaterialPageRoute(builder: (context) => AllProductsScreen()),
+                            );
                           },
                           style: TextButton.styleFrom(
                             foregroundColor: Colors.green.shade700,
@@ -708,260 +648,213 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
                     ),
                   ),
                   
-                  // Showing a few featured products with improved design
-                  GridView.builder(
-                    shrinkWrap: true,
-                    physics: const NeverScrollableScrollPhysics(),
-                    padding: const EdgeInsets.symmetric(horizontal: 16),
-                    gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-                      crossAxisCount: 2,
-                      childAspectRatio: 0.60,
-                      crossAxisSpacing: 16,
-                      mainAxisSpacing: 16,
-                    ),
-                    itemCount: 4, // Limit to 4 featured products
-                    itemBuilder: (context, index) {
-                      final bool isFavorite = index % 2 == 0;
-                      
-                      // Check if no products are available (this is a placeholder - you would replace with your actual check)
-                      if (index == 0 && false /* replace with your condition for no products */) {
-                        return Container(
-                          decoration: BoxDecoration(
-                            color: Colors.white,
-                            borderRadius: BorderRadius.circular(16),
-                            boxShadow: [
-                              BoxShadow(
-                                color: Colors.grey.withOpacity(0.15),
-                                spreadRadius: 1,
-                                blurRadius: 10,
-                                offset: const Offset(0, 5),
-                              ),
-                            ],
-                          ),
-                          child: Column(
-                            mainAxisAlignment: MainAxisAlignment.center,
-                            children: [
-                              Icon(
-                                Icons.inventory_2_outlined,
-                                size: 48,
-                                color: Colors.grey.shade400,
-                              ),
-                              const SizedBox(height: 16),
-                              Text(
-                                'No products found',
-                                style: TextStyle(
-                                  color: Colors.grey.shade700,
-                                  fontWeight: FontWeight.w500,
-                                ),
-                                textAlign: TextAlign.center,
-                              ),
-                            ],
-                          ),
-                        );
+                  // Displaying featured products
+                  FutureBuilder<List<FeaturedProduct>>(
+                    future: _featuredProducts,
+                    builder: (context, snapshot) {
+                      if (snapshot.connectionState == ConnectionState.waiting) {
+                        return Center(child: CircularProgressIndicator());
+                      } else if (snapshot.hasError) {
+                        return Center(child: Text('Error: ${snapshot.error}'));
+                      } else if (!snapshot.hasData || snapshot.data!.isEmpty) {
+                        return Center(child: Text('No featured products available'));
                       }
-                      
-                      return Container(
-                        decoration: BoxDecoration(
-                          color: Colors.white,
-                          borderRadius: BorderRadius.circular(16),
-                          boxShadow: [
-                            BoxShadow(
-                              color: Colors.grey.withOpacity(0.15),
-                              spreadRadius: 1,
-                              blurRadius: 10,
-                              offset: const Offset(0, 5),
-                            ),
-                          ],
+                      return GridView.builder(
+                        shrinkWrap: true,
+                        physics: const NeverScrollableScrollPhysics(),
+                        padding: const EdgeInsets.symmetric(horizontal: 16),
+                        gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+                          crossAxisCount: 2,
+                          childAspectRatio: 0.60,
+                          crossAxisSpacing: 16,
+                          mainAxisSpacing: 16,
                         ),
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            // Product image placeholder with Stack - improved design
-                            Stack(
-                              children: [
-                                Container(
-                                  height: 130,
-                                  decoration: BoxDecoration(
-                                    gradient: LinearGradient(
-                                      begin: Alignment.topLeft,
-                                      end: Alignment.bottomRight,
-                                      colors: [
-                                        Colors.green.shade50,
-                                        Colors.green.shade100,
-                                      ],
-                                    ),
-                                    borderRadius: const BorderRadius.only(
-                                      topLeft: Radius.circular(16),
-                                      topRight: Radius.circular(16),
-                                    ),
-                                  ),
-                                  child: Center(
-                                    child: Icon(
-                                      _getProductIcon(index),
-                                      size: 60,
-                                      color: Colors.green.shade400,
-                                    ),
+                        itemCount: snapshot.data!.length,
+                        itemBuilder: (context, index) {
+                          final product = snapshot.data![index];
+
+                          // Calculate the discount percentage
+                          double originalPrice = double.tryParse(product.price) ?? 0;
+                          double discountedPrice = double.tryParse(product.discountedPrice) ?? 0;
+                          String discountText = "";
+                          
+                          if (originalPrice > 0 && discountedPrice < originalPrice) {
+                            double discountPercentage = ((originalPrice - discountedPrice) / originalPrice) * 100;
+                            discountText = '${discountPercentage.toStringAsFixed(1)}% OFF';
+                          }
+
+                          return GestureDetector(
+                            onTap: () {
+                              // Navigate to the Product Detail screen
+                              Navigator.push(
+                                context,
+                                MaterialPageRoute(
+                                  builder: (context) => ProductDetailScreen(
+                                    categoryId: product.categoryId,
+                                    subcategoryId: product.subcategoryId,
+                                    productId: product.id,
                                   ),
                                 ),
-                                // Discount tag
-                                if (index % 3 == 0)
-                                  Positioned(
-                                    top: 10,
-                                    left: 10,
-                                    child: Container(
-                                      padding: const EdgeInsets.symmetric(
-                                        horizontal: 8,
-                                        vertical: 4,
-                                      ),
-                                      decoration: BoxDecoration(
-                                        color: Colors.red.shade500,
-                                        borderRadius: BorderRadius.circular(8),
-                                      ),
-                                      child: const Text(
-                                        '15% OFF',
-                                        style: TextStyle(
-                                          color: Colors.white,
-                                          fontWeight: FontWeight.bold,
-                                          fontSize: 10,
-                                        ),
-                                      ),
-                                    ),
+                              );
+                            },
+                            child: Container(
+                              decoration: BoxDecoration(
+                                color: Colors.white,
+                                borderRadius: BorderRadius.circular(16),
+                                boxShadow: [
+                                  BoxShadow(
+                                    color: Colors.grey.withOpacity(0.2),
+                                    spreadRadius: 2,
+                                    blurRadius: 10,
+                                    offset: const Offset(0, 5),
                                   ),
-                                Positioned(
-                                  top: 10,
-                                  right: 10,
-                                  child: Container(
-                                    padding: const EdgeInsets.all(6),
-                                    decoration: BoxDecoration(
-                                      color: Colors.white,
-                                      shape: BoxShape.circle,
-                                      boxShadow: [
-                                        BoxShadow(
-                                          color: Colors.black.withOpacity(0.1),
-                                          spreadRadius: 1,
-                                          blurRadius: 2,
-                                        ),
-                                      ],
-                                    ),
-                                    child: Icon(
-                                      isFavorite
-                                          ? Icons.favorite
-                                          : Icons.favorite_border,
-                                      size: 18,
-                                      color: isFavorite
-                                          ? Colors.red.shade400
-                                          : Colors.grey.shade600,
-                                    ),
-                                  ),
-                                ),
-                                // Rating
-                                Positioned(
-                                  bottom: 10,
-                                  right: 10,
-                                  child: Container(
-                                    padding: const EdgeInsets.symmetric(
-                                      horizontal: 6,
-                                      vertical: 3,
-                                    ),
-                                    decoration: BoxDecoration(
-                                      color: Colors.black.withOpacity(0.6),
-                                      borderRadius: BorderRadius.circular(8),
-                                    ),
-                                    child: Row(
-                                      children: [
-                                        const Icon(
-                                          Icons.star,
-                                          size: 14,
-                                          color: Colors.amber,
-                                        ),
-                                        const SizedBox(width: 3),
-                                        Text(
-                                          '${(4 + (index * 0.1)).toStringAsFixed(1)}',
-                                          style: const TextStyle(
-                                            color: Colors.white,
-                                            fontSize: 11,
-                                            fontWeight: FontWeight.bold,
-                                          ),
-                                        ),
-                                      ],
-                                    ),
-                                  ),
-                                ),
-                              ],
-                            ),
-                            Padding(
-                              padding: const EdgeInsets.all(10.0),
+                                ],
+                                border: Border.all(color: Colors.green.shade200, width: 1),
+                              ),
                               child: Column(
                                 crossAxisAlignment: CrossAxisAlignment.start,
                                 children: [
-                                  const SizedBox(height: 2),
-                                  Row(
+                                  // Product image with gradient overlay
+                                  Stack(
                                     children: [
-                                      Icon(
-                                        Icons.category_outlined,
-                                        size: 12,
-                                        color: Colors.grey.shade600,
+                                      Container(
+                                        height: 130,
+                                        decoration: BoxDecoration(
+                                          borderRadius: const BorderRadius.only(
+                                            topLeft: Radius.circular(16),
+                                            topRight: Radius.circular(16),
+                                          ),
+                                        ),
+                                        child: ClipRRect(
+                                          borderRadius: const BorderRadius.only(
+                                            topLeft: Radius.circular(16),
+                                            topRight: Radius.circular(16),
+                                          ),
+                                          child: Image.network(
+                                            "https://plant-world.actthost.com/uploads/products/${product.image}",
+                                            fit: BoxFit.cover,
+                                            height: 130,
+                                            width: double.infinity,
+                                            errorBuilder: (context, error, stackTrace) {
+                                              return Container(
+                                                width: double.infinity,
+                                                height: 130,
+                                                color: Colors.grey[200],
+                                                child: Icon(Icons.error_outline, color: Colors.red[400]),
+                                              );
+                                            },
+                                          ),
+                                        ),
                                       ),
-                                    ],
-                                  ),
-                                  const SizedBox(height: 8),
-                                  Row(
-                                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                                    children: [
-                                      Column(
-                                        crossAxisAlignment: CrossAxisAlignment.start,
-                                        children: [
-                                          if (index % 3 == 0)
-                                            Text(
-                                              '\$${((index + 1) * 17.50).toStringAsFixed(2)}',
+                                      // Gradient overlay
+                                      Positioned.fill(
+                                        child: Container(
+                                          decoration: BoxDecoration(
+                                            gradient: LinearGradient(
+                                              colors: [
+                                                Colors.black.withOpacity(0.5),
+                                                Colors.transparent,
+                                              ],
+                                              begin: Alignment.bottomCenter,
+                                              end: Alignment.topCenter,
+                                            ),
+                                          ),
+                                        ),
+                                      ),
+                                      // Discount Text
+                                      if (discountText.isNotEmpty)
+                                        Positioned(
+                                          left: 8,
+                                          top: 8,
+                                          child: Container(
+                                            padding: EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                                            decoration: BoxDecoration(
+                                              color: Colors.red,
+                                              borderRadius: BorderRadius.circular(12),
+                                            ),
+                                            child: Text(
+                                              discountText,
                                               style: TextStyle(
-                                                color: Colors.grey.shade500,
-                                                fontWeight: FontWeight.w500,
-                                                fontSize: 11,
-                                                decoration: TextDecoration.lineThrough,
+                                                color: Colors.white,
+                                                fontWeight: FontWeight.bold,
+                                                fontSize: 12,
                                               ),
                                             ),
+                                          ),
+                                        ),
+                                    ],
+                                  ),
+                                  Padding(
+                                    padding: const EdgeInsets.all(10.0),
+                                    child: Column(
+                                      crossAxisAlignment: CrossAxisAlignment.start,
+                                      children: [
+                                        // Product Name
+                                        Text(
+                                          product.name,
+                                          style: TextStyle(
+                                            color: Colors.green.shade800,
+                                            fontWeight: FontWeight.bold,
+                                            fontSize: 16,
+                                          ),
+                                        ),
+                                        const SizedBox(height: 4),
+                                        // Price
+                                        Text(
+                                          '\$${double.parse(product.price).toStringAsFixed(2)}',
+                                          style: TextStyle(
+                                            color: Colors.grey.shade600,
+                                            fontSize: 14,
+                                            decoration: product.discountedPrice != null ? TextDecoration.lineThrough : null,
+                                          ),
+                                        ),
+                                        // Discount Price
+                                        if (product.discountedPrice != null)
                                           Text(
-                                            '\$${((index + 1) * 14.99).toStringAsFixed(2)}',
+                                            '\$${double.parse(product.discountedPrice).toStringAsFixed(2)}',
                                             style: TextStyle(
-                                              color: Colors.green.shade800,
+                                              color: Colors.green.shade700,
                                               fontWeight: FontWeight.bold,
-                                              fontSize: 15,
+                                              fontSize: 14,
                                             ),
                                           ),
-                                        ],
-                                      ),
-                                      Container(
-                                        padding: const EdgeInsets.all(5),
-                                        decoration: BoxDecoration(
-                                          gradient: LinearGradient(
-                                            colors: [
-                                              Colors.green.shade400,
-                                              Colors.green.shade600,
+                                        // Category Name with Icon
+                                        Container(
+                                          margin: const EdgeInsets.only(top: 2),
+                                          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                                          decoration: BoxDecoration(
+                                            color: Colors.green.shade50,
+                                            borderRadius: BorderRadius.circular(8),
+                                          ),
+                                          child: Row(
+                                            mainAxisSize: MainAxisSize.min,
+                                            children: [
+                                              Icon(
+                                                Icons.category_outlined,
+                                                size: 8,
+                                                color: Colors.green.shade700,
+                                              ),
+                                              const SizedBox(width: 2),
+                                              Text(
+                                                maxLines: 1,
+                                                overflow: TextOverflow.ellipsis,
+                                                product.catName,
+                                                style: TextStyle(
+                                                  color: Colors.green.shade700,
+                                                  fontSize: 8,
+                                                ),
+                                              ),
                                             ],
                                           ),
-                                          borderRadius: BorderRadius.circular(10),
-                                          boxShadow: [
-                                            BoxShadow(
-                                              color: Colors.green.withOpacity(0.3),
-                                              spreadRadius: 1,
-                                              blurRadius: 2,
-                                            ),
-                                          ],
                                         ),
-                                        child: const Icon(
-                                          Icons.add,
-                                          size: 18,
-                                          color: Colors.white,
-                                        ),
-                                      ),
-                                    ],
+                                      ],
+                                    ),
                                   ),
                                 ],
                               ),
                             ),
-                          ],
-                        ),
+                          );
+                        },
                       );
                     },
                   ),
@@ -975,16 +868,6 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
     );
   }
   
-  IconData _getProductIcon(int index) {
-    List<IconData> icons = [
-      Icons.grass,
-      Icons.science,
-      Icons.pest_control,
-      Icons.agriculture,
-    ];
-    return icons[index % icons.length];
-  }
-
   // Add this method to handle auto-scrolling
   void _startAutoScroll() {
     Future.delayed(const Duration(seconds: 5), () {
@@ -1011,10 +894,18 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
       // Get cart items from API service
       final cartItems = await ApiService().getCart();
       
-      // Update cart count with the actual number of items
-      setState(() {
-        _cartItemCount = cartItems.length;
-      });
+      // Check if cartItems is a List and not null
+      if (cartItems is List) {
+        // Update cart count with the actual number of items
+        setState(() {
+          _cartItemCount = cartItems.length;
+        });
+      } else {
+        // If cartItems is not a List or is null, set count to 0
+        setState(() {
+          _cartItemCount = 0;
+        });
+      }
     } catch (e) {
       print('Error fetching cart count: $e');
       // In case of error, set cart count to 0
@@ -1034,4 +925,4 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
       ),
     );
   }
-} 
+}

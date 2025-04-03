@@ -30,7 +30,7 @@ class _NotificationScreenState extends State<NotificationScreen> {
 
     try {
       final SharedPreferences prefs = await SharedPreferences.getInstance();
-      final int userId = prefs.getInt('user_id') ?? 1;
+      final int userId = prefs.getInt('id') ?? 0;
 
       final response = await _apiService.getNotifications(userId);
       

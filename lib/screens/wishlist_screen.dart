@@ -4,6 +4,7 @@ import 'package:new_project/screens/product_by_subcategory_screen.dart';
 import 'package:new_project/services/api_service.dart';
 import 'package:new_project/models/wishlist_item.dart'; // Import the WishlistItem model
 import 'package:shimmer/shimmer.dart'; // Add this import for shimmer effect
+import 'package:shared_preferences/shared_preferences.dart'; // Import shared_preferences
 
 class WishlistScreen extends StatefulWidget {
   const WishlistScreen({Key? key}) : super(key: key);
@@ -13,9 +14,9 @@ class WishlistScreen extends StatefulWidget {
 }
 
 class _WishlistScreenState extends State<WishlistScreen> {
-  late Future<List<WishlistItem>> _wishlistItems; // Future to hold wishlist items
+  Future<List<WishlistItem>>? _wishlistItems; // Change to nullable Future
   final ApiService _apiService = ApiService(); // Create an instance of ApiService
-  final int userId = 1; // Replace with the actual user ID
+  late int userId; // Change to late initialization
   List<WishlistItem> _filteredItems = []; // List to hold filtered items
   String _searchQuery = ''; // Search query
   bool _isSearching = false; // Track if the search field is visible
@@ -25,12 +26,18 @@ class _WishlistScreenState extends State<WishlistScreen> {
   @override
   void initState() {
     super.initState();
-    _loadWishlist(); // Load wishlist items on initialization
+    _loadUserId(); // Load user ID from shared preferences
+  }
+
+  Future<void> _loadUserId() async {
+    SharedPreferences prefs = await SharedPreferences.getInstance();
+    userId = prefs.getInt('id') ?? 0; // Retrieve user ID or default to 0
+    _loadWishlist(); // Load wishlist items after retrieving user ID
   }
 
   Future<void> _loadWishlist() async {
     setState(() {
-      _wishlistItems = _apiService.getWishlist(userId);
+      _wishlistItems = _apiService.getWishlist(userId); // Initialize wishlist items
       _selectedItems = [];
       _isMultiSelectMode = false;
     });
@@ -163,53 +170,13 @@ class _WishlistScreenState extends State<WishlistScreen> {
         ),
       ),
       body: FutureBuilder<List<WishlistItem>>(
-        future: _wishlistItems,
+        future: _wishlistItems, // Use the nullable Future
         builder: (context, snapshot) {
           if (snapshot.connectionState == ConnectionState.waiting) {
-            return _buildShimmerLoading(); // Replace CircularProgressIndicator with shimmer loading
+            return _buildShimmerLoading(); // Show shimmer loading while waiting
           } else if (snapshot.hasError) {
             return Center(
-              child: Column(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  Icon(Icons.error_outline, size: 60, color: Colors.red.shade300),
-                  SizedBox(height: 16),
-                  Text(
-                    'Something went wrong',
-                    style: TextStyle(
-                      fontSize: 18,
-                      fontWeight: FontWeight.w500,
-                      color: Colors.grey.shade800,
-                    ),
-                  ),
-                  SizedBox(height: 8),
-                  Text(
-                    'Please try again later',
-                    style: TextStyle(
-                      fontSize: 16,
-                      color: Colors.grey.shade600,
-                    ),
-                  ),
-                  SizedBox(height: 24),
-                  ElevatedButton(
-                    onPressed: () {
-                      setState(() {
-                        _loadWishlist();
-                      });
-                    },
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: primaryColor,
-                      foregroundColor: Colors.white,
-                      elevation: 0,
-                      padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(30),
-                      ),
-                    ),
-                    child: Text('Retry'),
-                  ),
-                ],
-              ),
+              child: Text('Error: ${snapshot.error}'), // Handle error
             );
           } else if (!snapshot.hasData || snapshot.data!.isEmpty) {
             return _buildEmptyWishlist(); // Show empty wishlist message

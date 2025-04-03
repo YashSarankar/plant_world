@@ -38,7 +38,7 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
   Future<void> _initializeUserId() async {
     SharedPreferences prefs = await SharedPreferences.getInstance();
     setState(() {
-      userId = prefs.getInt('id') ?? 0; // Update the state variable
+      userId = prefs.getInt('id') ?? 0; 
     });
   }
 

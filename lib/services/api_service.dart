@@ -9,6 +9,8 @@ import '../models/wishlist_item.dart';
 import '../models/cart_item.dart';
 import '../models/slider.dart';
 import '../models/order_model.dart';
+import '../models/featured_product.dart';
+import '../models/all_product.dart';
 
 class ApiService {
   static const String _baseUrl = 'https://plant-world.actthost.com/api';
@@ -246,7 +248,7 @@ class ApiService {
 
   Future<void> addToCart(int productId) async {
     final SharedPreferences prefs = await SharedPreferences.getInstance();
-    final int userId = prefs.getInt('user_id') ?? 1;
+    final int userId = prefs.getInt('id') ?? 0;
 
     final response = await http.post(
       Uri.parse('$_baseUrl/addCart'),
@@ -269,7 +271,7 @@ class ApiService {
 
   Future<List<CartItem>> getCart() async {
     final SharedPreferences prefs = await SharedPreferences.getInstance();
-    final int userId = prefs.getInt('user_id') ?? 1;
+    final int userId = prefs.getInt('id') ?? 0;
 
     final response = await http.post(
       Uri.parse('$_baseUrl/getCart'),
@@ -296,8 +298,7 @@ class ApiService {
 
   Future<void> deleteCartItem(int productId) async {
     final SharedPreferences prefs = await SharedPreferences.getInstance();
-    final int userId = prefs.getInt('user_id') ?? 1;
-
+    final int userId = prefs.getInt('id') ?? 0;
     final response = await http.post(
       Uri.parse('$_baseUrl/deleteCart'),
       headers: {'Content-Type': 'application/json'},
@@ -379,7 +380,12 @@ class ApiService {
       }),
     );
 
-    if (response.statusCode != 200) {
+    if (response.statusCode == 200||response.statusCode == 201) {
+      final data = json.decode(response.body);
+      if (data['error']) {
+        throw Exception('Failed to submit order: ${data['message']}');
+      }
+    } else {
       throw Exception('Failed to submit order: ${response.body}');
     }
   }
@@ -403,4 +409,38 @@ class ApiService {
       throw Exception('Failed to load orders: $e');
     }
   }
-} 
+
+  // New method to fetch featured products
+  static Future<List<FeaturedProduct>> fetchFeaturedProducts() async {
+    final response = await http.post(Uri.parse('$_baseUrl/getFeatureProduct'));
+
+    if (response.statusCode == 200||response.statusCode == 201) {
+      final data = json.decode(response.body);
+      if (!data['error']) {
+        List<FeaturedProduct> products = (data['product'] as List)
+            .map((item) => FeaturedProduct.fromJson(item))
+            .toList();
+        return products;
+      } else {
+        throw Exception('Failed to load featured products');
+      }
+    } else {
+      throw Exception('Failed to load featured products');
+    }
+  }
+
+  static Future<AllProduct> fetchAllProducts() async {
+    final response = await http.post(Uri.parse('$_baseUrl/AllProduct'));
+
+    if (response.statusCode == 200) {
+      final data = json.decode(response.body);
+      if (!data['error']) {
+        return AllProduct.fromJson(data);
+      } else {
+        throw Exception('Failed to load products');
+      }
+    } else {
+      throw Exception('Failed to load products');
+    }
+  }
+}

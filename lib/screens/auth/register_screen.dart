@@ -1,7 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import 'package:new_project/screens/main_screen.dart';
-import 'package:shared_preferences/shared_preferences.dart';
 import '../../services/api_service.dart';
 import 'login_screen.dart';
 
@@ -77,14 +75,6 @@ class _RegisterScreenState extends State<RegisterScreen> {
 
         // Check if there is an error in the response
         if (data['error'] == false) {
-          // Registration was successful
-          // Save user data in Shared Preferences if needed
-          // Since there is no user object in the response, you may skip this part
-          // final SharedPreferences prefs = await SharedPreferences.getInstance();
-          // await prefs.setString('name', _nameController.text);
-          // await prefs.setString('email', _emailController.text);
-          // await prefs.setString('phone', _mobileController.text);
-          
           // Show success message
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(content: Text(data['data'])), // Show success message
