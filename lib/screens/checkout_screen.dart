@@ -3,6 +3,8 @@ import 'package:shared_preferences/shared_preferences.dart';
 import '../services/api_service.dart';
 import '../models/cart_item.dart';
 import 'package:new_project/screens/main_screen.dart';
+import '../services/payment_service.dart';
+import 'dart:async';
 
 class CheckoutScreen extends StatefulWidget {
   final List<CartItem> cartItems;
@@ -89,79 +91,89 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
     });
 
     try {
-      // In a real app, you would create an order with all items
-      // For now, we'll place individual orders for each item
+      // Store a reference to the scaffold messenger
+      final scaffoldMessenger = ScaffoldMessenger.of(context);
+      
+      // Process payment with Razorpay
+      String? paymentId;
+      
+      final paymentService = PaymentService();
+      
+      // Show loading indicator
+      showDialog(
+        context: context,
+        barrierDismissible: false,
+        builder: (BuildContext context) {
+          return Center(
+            child: CircularProgressIndicator(
+              color: Colors.green[700],
+            ),
+          );
+        },
+      );
+      
+      // Process the payment for the total amount
+      Completer<String?> completer = Completer<String?>();
+      
+      paymentService.openCheckout(
+        context,
+        widget.total,
+        "Order Payment",
+        (String paymentId) {
+          completer.complete(paymentId);
+        },
+        (String errorMessage) {
+          completer.complete(null);
+          scaffoldMessenger.showSnackBar(
+            SnackBar(content: Text('Payment failed: $errorMessage')),
+          );
+        }
+      );
+      
+      paymentId = await completer.future;
+      
+      // Close loading dialog
+      Navigator.pop(context);
+      
+      if (paymentId == null) {
+        setState(() {
+          _isLoading = false;
+        });
+        scaffoldMessenger.showSnackBar(
+          SnackBar(content: Text('Payment was cancelled or failed')),
+        );
+        return;
+      }
+      
+      // Submit orders with the payment ID
       for (var item in widget.cartItems) {
-        // Use 230 as the dummy payment ID for COD
-        int paymentId = 230;
-        await _apiService.submitOrder(_userId, item.productId, paymentId);
+        final success = await _apiService.submitOrder(_userId, item.productId, paymentId);
         
-        // Remove the item from cart
-        await _apiService.deleteCartItem(item.productId);
+        if (!success) {
+          throw Exception("Failed to submit order for ${item.name}");
+        }
       }
       
       setState(() {
         _isLoading = false;
       });
       
-      // Show success dialog
-      showDialog(
-        context: context,
-        barrierDismissible: false,
-        builder: (BuildContext context) {
-          return AlertDialog(
-            shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(12),
-            ),
-            title: Text(
-              'Order Placed Successfully!',
-              style: TextStyle(
-                fontSize: 18,
-                fontWeight: FontWeight.bold,
-                color: Colors.green[700],
-              ),
-            ),
-            content: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                Icon(
-                  Icons.check_circle_outline,
-                  color: Colors.green[700],
-                  size: 60,
-                ),
-                SizedBox(height: 16),
-                Text(
-                  'Your order has been placed successfully. You can track your order in the Orders section.',
-                  style: TextStyle(
-                    fontSize: 14,
-                    color: Colors.grey[700],
-                  ),
-                ),
-              ],
-            ),
-            actions: [
-              TextButton(
-                onPressed: () {
-                  Navigator.of(context).pop();
-                  // Navigate to main screen
-                  Navigator.pushAndRemoveUntil(
-                    context,
-                    MaterialPageRoute(builder: (context) => MainScreen(initialIndex: 0)),
-                    (route) => false,
-                  );
-                },
-                child: Text(
-                  'Continue Shopping',
-                  style: TextStyle(
-                    color: Colors.green[700],
-                    fontWeight: FontWeight.bold,
-                  ),
-                ),
-              ),
-            ],
-          );
-        },
+      // Show a simple success message
+      scaffoldMessenger.showSnackBar(
+        SnackBar(
+          content: Text('Order placed successfully!'),
+          backgroundColor: Colors.green[700],
+          duration: Duration(seconds: 2),
+        ),
       );
+      
+      // Navigate back to cart screen
+      Navigator.pushAndRemoveUntil(
+        context,
+        MaterialPageRoute(builder: (context) => MainScreen(initialIndex: 2)),
+        (route) => false,
+      );
+      
     } catch (e) {
       setState(() {
         _isLoading = false;
@@ -218,10 +230,6 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
                           _buildSectionTitle('Shipping Address'),
                           SizedBox(height: 16),
                           _buildShippingAddressCard(),
-                          SizedBox(height: 24),
-                          _buildSectionTitle('Payment Method'),
-                          SizedBox(height: 16),
-                          _buildPaymentMethodCard(),
                           SizedBox(height: 24),
                           _buildSectionTitle('Order Summary'),
                           SizedBox(height: 16),
@@ -659,160 +667,6 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
     );
   }
 
-  Widget _buildPaymentMethodCard() {
-    return Container(
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(12),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withOpacity(0.05),
-            blurRadius: 10,
-            offset: Offset(0, 2),
-          ),
-        ],
-      ),
-      child: Column(
-        children: [
-          Container(
-            padding: EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-            decoration: BoxDecoration(
-              color: Colors.green[50],
-              borderRadius: BorderRadius.only(
-                topLeft: Radius.circular(12),
-                topRight: Radius.circular(12),
-              ),
-            ),
-            child: Row(
-              children: [
-                Icon(Icons.payment_outlined, size: 18, color: Colors.green[800]),
-                SizedBox(width: 8),
-                Text(
-                  'Payment Options',
-                  style: TextStyle(
-                    fontWeight: FontWeight.w600,
-                    fontSize: 14,
-                    color: Colors.green[800],
-                  ),
-                ),
-              ],
-            ),
-          ),
-          RadioListTile<String>(
-            title: Row(
-              children: [
-                Container(
-                  padding: EdgeInsets.all(8),
-                  decoration: BoxDecoration(
-                    color: Colors.green[50],
-                    borderRadius: BorderRadius.circular(8),
-                  ),
-                  child: Icon(Icons.money, color: Colors.green[700], size: 20),
-                ),
-                SizedBox(width: 12),
-                Text(
-                  'Cash on Delivery',
-                  style: TextStyle(
-                    fontWeight: FontWeight.w500,
-                    fontSize: 14,
-                  ),
-                ),
-              ],
-            ),
-            subtitle: Text(
-              'Pay when your order arrives',
-              style: TextStyle(
-                fontSize: 12,
-                color: Colors.grey[600],
-              ),
-            ),
-            value: 'cod',
-            groupValue: _paymentMethod,
-            onChanged: (value) {
-              setState(() {
-                _paymentMethod = value!;
-              });
-            },
-            activeColor: Colors.green[700],
-            contentPadding: EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-          ),
-          Divider(height: 1),
-          RadioListTile<String>(
-            title: Row(
-              children: [
-                Container(
-                  padding: EdgeInsets.all(8),
-                  decoration: BoxDecoration(
-                    color: Colors.grey[100],
-                    borderRadius: BorderRadius.circular(8),
-                  ),
-                  child: Icon(Icons.credit_card, color: Colors.grey[500], size: 20),
-                ),
-                SizedBox(width: 12),
-                Text(
-                  'Credit/Debit Card',
-                  style: TextStyle(
-                    fontWeight: FontWeight.w500,
-                    fontSize: 14,
-                    color: Colors.grey[400], // Disabled
-                  ),
-                ),
-              ],
-            ),
-            subtitle: Text(
-              'Coming soon',
-              style: TextStyle(
-                fontSize: 12,
-                color: Colors.grey[400],
-              ),
-            ),
-            value: 'card',
-            groupValue: _paymentMethod,
-            onChanged: null, // Disabled
-            activeColor: Colors.green[700],
-            contentPadding: EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-          ),
-          Divider(height: 1),
-          RadioListTile<String>(
-            title: Row(
-              children: [
-                Container(
-                  padding: EdgeInsets.all(8),
-                  decoration: BoxDecoration(
-                    color: Colors.grey[100],
-                    borderRadius: BorderRadius.circular(8),
-                  ),
-                  child: Icon(Icons.account_balance, color: Colors.grey[500], size: 20),
-                ),
-                SizedBox(width: 12),
-                Text(
-                  'UPI Payment',
-                  style: TextStyle(
-                    fontWeight: FontWeight.w500,
-                    fontSize: 14,
-                    color: Colors.grey[400], // Disabled
-                  ),
-                ),
-              ],
-            ),
-            subtitle: Text(
-              'Coming soon',
-              style: TextStyle(
-                fontSize: 12,
-                color: Colors.grey[400],
-              ),
-            ),
-            value: 'upi',
-            groupValue: _paymentMethod,
-            onChanged: null, // Disabled
-            activeColor: Colors.green[700],
-            contentPadding: EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-          ),
-        ],
-      ),
-    );
-  }
-
   Widget _buildOrderSummary() {
     return Container(
       decoration: BoxDecoration(
@@ -1009,7 +863,7 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
                   Text(
-                    'Place Order',
+                    'Pay Now',
                     style: TextStyle(
                       fontSize: 16,
                       fontWeight: FontWeight.bold,

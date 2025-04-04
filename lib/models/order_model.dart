@@ -33,6 +33,10 @@ class Order {
   final double subTotal;
   final String status;
   final String activeStatus;
+  final String? receivedStatus;
+  final String? confirmStatus;
+  final String? deliveredStatus;
+  final String? cancelStatus;
   final String month;
   final DateTime createdAt;
   final DateTime updatedAt;
@@ -51,6 +55,10 @@ class Order {
     required this.subTotal,
     required this.status,
     required this.activeStatus,
+    this.receivedStatus,
+    this.confirmStatus,
+    this.deliveredStatus,
+    this.cancelStatus,
     required this.month,
     required this.createdAt,
     required this.updatedAt,
@@ -71,6 +79,10 @@ class Order {
       subTotal: double.parse(json['sub_total'].toString()),
       status: json['status'],
       activeStatus: json['active_status'],
+      receivedStatus: json['received_status'],
+      confirmStatus: json['confirm_status'],
+      deliveredStatus: json['delivered_status'],
+      cancelStatus: json['cancel_status'],
       month: json['month'],
       createdAt: DateTime.parse(json['created_at']),
       updatedAt: DateTime.parse(json['updated_at']),

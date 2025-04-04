@@ -60,11 +60,6 @@ class OrderDetailsScreen extends StatelessWidget {
             // Payment Information
             _buildPaymentInfoCard(context),
             
-            SizedBox(height: 20),
-            
-            // Action Buttons
-            _buildActionButtons(context),
-            
             SizedBox(height: 24),
           ],
         ),
@@ -73,17 +68,20 @@ class OrderDetailsScreen extends StatelessWidget {
   }
 
   Widget _buildOrderStatusTimeline(BuildContext context) {
-    final statusSteps = ['Confirmed', 'Processing', 'Shipped', 'Delivered'];
+    // Use the exact labels from the screenshot
+    final statusSteps = ['Order Placed', 'Processing', 'Shipped', 'Delivered'];
     int currentStep = 0;
     
+    // Determine current step based on activeStatus
     switch (order.activeStatus.toLowerCase()) {
-      case 'confirm':
+      case 'pending':
         currentStep = 0;
         break;
-      case 'processing':
+      case 'received':
         currentStep = 1;
         break;
-      case 'shipped':
+      case 'confirm':
+      case 'confirmed':
         currentStep = 2;
         break;
       case 'delivered':
@@ -103,78 +101,182 @@ class OrderDetailsScreen extends StatelessWidget {
             'Order Status',
             style: TextStyle(
               fontWeight: FontWeight.bold,
-              fontSize: 16,
+              fontSize: 22,
+              color: Colors.black87,
             ),
           ),
-          SizedBox(height: 20),
+          SizedBox(height: 30),
+          
+          // First row: Circles with icons
           Row(
-            children: List.generate(statusSteps.length, (index) {
-              bool isActive = index <= currentStep;
-              bool isLast = index == statusSteps.length - 1;
-              
-              return Expanded(
-                child: Row(
-                  children: [
-                    Expanded(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.center,
-                        children: [
-                          Container(
-                            width: 24,
-                            height: 24,
-                            decoration: BoxDecoration(
-                              color: isActive ? Colors.green[800] : Colors.grey[300],
-                              shape: BoxShape.circle,
-                            ),
-                            child: Icon(
-                              _getStatusIcon(index),
-                              color: Colors.white,
-                              size: 14,
-                            ),
-                          ),
-                          SizedBox(height: 8),
-                          Text(
-                            statusSteps[index],
-                            style: TextStyle(
-                              fontSize: 12,
-                              fontWeight: isActive ? FontWeight.bold : FontWeight.normal,
-                              color: isActive ? Colors.green[800] : Colors.grey[600],
-                            ),
-                            textAlign: TextAlign.center,
-                          ),
-                        ],
-                      ),
-                    ),
-                    if (!isLast)
-                      Expanded(
-                        child: Container(
-                          height: 2,
-                          color: index < currentStep ? Colors.green[800] : Colors.grey[300],
-                        ),
-                      ),
-                  ],
+            mainAxisAlignment: MainAxisAlignment.start,
+            children: [
+              // Order Placed circle
+              Container(
+                width: 50,
+                height: 50,
+                decoration: BoxDecoration(
+                  color: Colors.green[700],
+                  shape: BoxShape.circle,
                 ),
-              );
-            }),
+                child: Center(
+                  child: Icon(
+                    Icons.receipt_outlined,
+                    color: Colors.white,
+                    size: 28,
+                  ),
+                ),
+              ),
+              
+              // Line between Order Placed and Processing
+              Expanded(
+                child: Container(
+                  height: 3,
+                  color: currentStep > 0 ? Colors.green[700] : Colors.grey[300],
+                ),
+              ),
+              
+              // Processing circle
+              Container(
+                width: 50,
+                height: 50,
+                decoration: BoxDecoration(
+                  color: currentStep >= 1 ? Colors.green[700] : Colors.grey[200],
+                  shape: BoxShape.circle,
+                ),
+                child: Center(
+                  child: Icon(
+                    Icons.assignment_outlined,
+                    color: Colors.white,
+                    size: 24,
+                  ),
+                ),
+              ),
+              
+              // Line between Processing and Shipped
+              Expanded(
+                child: Container(
+                  height: 3,
+                  color: currentStep > 1 ? Colors.green[700] : Colors.grey[300],
+                ),
+              ),
+              
+              // Shipped circle
+              Container(
+                width: 50,
+                height: 50,
+                decoration: BoxDecoration(
+                  color: currentStep >= 2 ? Colors.green[700] : Colors.grey[200],
+                  shape: BoxShape.circle,
+                ),
+                child: Center(
+                  child: Icon(
+                    Icons.check_circle_outline,
+                    color: Colors.white,
+                    size: 24,
+                  ),
+                ),
+              ),
+              
+              // Line between Shipped and Delivered
+              Expanded(
+                child: Container(
+                  height: 3,
+                  color: currentStep > 2 ? Colors.green[700] : Colors.grey[300],
+                ),
+              ),
+              
+              // Delivered circle
+              Container(
+                width: 50,
+                height: 50,
+                decoration: BoxDecoration(
+                  color: currentStep >= 3 ? Colors.green[700] : Colors.grey[200],
+                  shape: BoxShape.circle,
+                ),
+                child: Center(
+                  child: Icon(
+                    Icons.home_outlined,
+                    color: Colors.white,
+                    size: 24,
+                  ),
+                ),
+              ),
+            ],
+          ),
+          
+          SizedBox(height: 4),
+          
+          // Second row: Labels with shorter text
+          Row(
+            mainAxisAlignment: MainAxisAlignment.start,
+            children: [
+              // Order Placed label
+              Container(
+                width: 50,
+                child: Text(
+                  'Ordered',
+                  style: TextStyle(
+                    fontSize: 10,
+                    fontWeight: FontWeight.bold,
+                    color: Colors.green[700],
+                  ),
+                  textAlign: TextAlign.center,
+                ),
+              ),
+              
+              Expanded(child: SizedBox()),
+              
+              // Processing label
+              Container(
+                width: 50,
+                child: Text(
+                  'Process',
+                  style: TextStyle(
+                    fontSize: 10,
+                    fontWeight: currentStep >= 1 ? FontWeight.w500 : FontWeight.normal,
+                    color: currentStep >= 1 ? Colors.green[700] : Colors.grey[600],
+                  ),
+                  textAlign: TextAlign.center,
+                ),
+              ),
+              
+              Expanded(child: SizedBox()),
+              
+              // Shipped label
+              Container(
+                width: 50,
+                child: Text(
+                  'Shipped',
+                  style: TextStyle(
+                    fontSize: 10,
+                    fontWeight: currentStep >= 2 ? FontWeight.w500 : FontWeight.normal,
+                    color: currentStep >= 2 ? Colors.green[700] : Colors.grey[600],
+                  ),
+                  textAlign: TextAlign.center,
+                ),
+              ),
+              
+              Expanded(child: SizedBox()),
+              
+              // Delivered label
+              Container(
+                width: 50,
+                child: Text(
+                  'Delivered',
+                  style: TextStyle(
+                    fontSize: 10,
+                    fontWeight: currentStep >= 3 ? FontWeight.w500 : FontWeight.normal,
+                    color: currentStep >= 3 ? Colors.green[700] : Colors.grey[600],
+                  ),
+                  textAlign: TextAlign.center,
+                ),
+              ),
+            ],
           ),
         ],
       ),
     );
-  }
-
-  IconData _getStatusIcon(int step) {
-    switch (step) {
-      case 0:
-        return Icons.check;
-      case 1:
-        return Icons.hourglass_empty;
-      case 2:
-        return Icons.local_shipping_outlined;
-      case 3:
-        return Icons.home_outlined;
-      default:
-        return Icons.check;
-    }
   }
 
   Widget _buildOrderInfoCard(BuildContext context) {
@@ -249,7 +351,7 @@ class OrderDetailsScreen extends StatelessWidget {
                 ),
               ),
               Text(
-                'Qty: ${order.quantity ?? "N/A"}',
+                'Qty: ${order.quantity ?? 1}',
                 style: TextStyle(
                   color: Colors.grey[700],
                   fontSize: 14,
@@ -348,6 +450,7 @@ class OrderDetailsScreen extends StatelessWidget {
 
   Widget _buildOrderSummaryCard(BuildContext context) {
     final discount = order.price - order.discountedPrice;
+    final totalAmount = order.subTotal > 0 ? order.subTotal : order.discountedPrice * (order.quantity ?? 1);
     
     return Container(
       decoration: BoxDecoration(
@@ -380,7 +483,7 @@ class OrderDetailsScreen extends StatelessWidget {
           ),
           _buildSummaryRow(
             'Total Amount',
-            '₹${order.subTotal > 0 ? order.subTotal : order.discountedPrice}',
+            '₹$totalAmount',
             isBold: true,
           ),
           Padding(
@@ -514,55 +617,6 @@ class OrderDetailsScreen extends StatelessWidget {
     }
   }
 
-  Widget _buildActionButtons(BuildContext context) {
-    return Padding(
-      padding: EdgeInsets.symmetric(horizontal: 16),
-      child: Row(
-        children: [
-          Expanded(
-            child: OutlinedButton.icon(
-              onPressed: () {
-                ScaffoldMessenger.of(context).showSnackBar(
-                  SnackBar(content: Text('Track order feature coming soon')),
-                );
-              },
-              icon: Icon(Icons.local_shipping_outlined, size: 18),
-              label: Text('Track Order'),
-              style: OutlinedButton.styleFrom(
-                foregroundColor: Colors.green[800],
-                side: BorderSide(color: Colors.green[800]!),
-                padding: EdgeInsets.symmetric(vertical: 12),
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(8),
-                ),
-              ),
-            ),
-          ),
-          SizedBox(width: 12),
-          Expanded(
-            child: ElevatedButton.icon(
-              onPressed: () {
-                ScaffoldMessenger.of(context).showSnackBar(
-                  SnackBar(content: Text('Contact support feature coming soon')),
-                );
-              },
-              icon: Icon(Icons.support_agent, size: 18),
-              label: Text('Get Help'),
-              style: ElevatedButton.styleFrom(
-                backgroundColor: Colors.green[800],
-                foregroundColor: Colors.white,
-                padding: EdgeInsets.symmetric(vertical: 12),
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(8),
-                ),
-              ),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
   Widget _buildStatusBadge(String status) {
     Color color;
     IconData icon;
@@ -572,12 +626,17 @@ class OrderDetailsScreen extends StatelessWidget {
         color = Colors.green;
         icon = Icons.check_circle;
         break;
-      case 'shipped':
+      case 'confirmed':
+      case 'confirm':
         color = Colors.blue;
-        icon = Icons.local_shipping;
+        icon = Icons.check_circle_outline;
         break;
-      case 'processing':
+      case 'received':
         color = Colors.orange;
+        icon = Icons.inventory_outlined;
+        break;
+      case 'pending':
+        color = Colors.amber;
         icon = Icons.hourglass_empty;
         break;
       case 'cancelled':

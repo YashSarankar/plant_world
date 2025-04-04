@@ -5,6 +5,7 @@ import 'package:flutter/services.dart';
 import 'package:share_plus/share_plus.dart'; // Add this package for sharing
 import 'package:new_project/screens/main_screen.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import '../services/payment_service.dart'; // Import the payment service
 
 class ProductDetailScreen extends StatefulWidget {
   final int categoryId;
@@ -27,12 +28,19 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
   
   // Declare a state variable for userId
   int userId = 0; // Default value
+  final PaymentService _paymentService = PaymentService(); // Initialize payment service
 
   @override
   void initState() {
     super.initState();
     _initializeUserId();
     _productDetail = _apiService.fetchProductById(widget.categoryId, widget.subcategoryId, widget.productId);
+  }
+
+  @override
+  void dispose() {
+    _paymentService.dispose(); // Dispose payment service
+    super.dispose();
   }
 
   Future<void> _initializeUserId() async {
@@ -426,19 +434,69 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
                         child: ElevatedButton.icon(
                           onPressed: () async {
                             try {
-                              // Dummy payment ID
-                              int paymentId = 230; 
-                              await _apiService.submitOrder(userId, product.id, paymentId); // Use the state variable
-                              ScaffoldMessenger.of(context).showSnackBar(
-                                SnackBar(
-                                  content: Text('Order submitted successfully!'),
-                                  backgroundColor: Colors.green[700],
-                                ),
+                              // Show loading indicator
+                              showDialog(
+                                context: context,
+                                barrierDismissible: false,
+                                builder: (BuildContext context) {
+                                  return Center(
+                                    child: CircularProgressIndicator(
+                                      color: Colors.green[700],
+                                    ),
+                                  );
+                                },
+                              );
+                              
+                              // Process payment with callbacks
+                              _paymentService.openCheckout(
+                                context, 
+                                double.parse(product.discountedPrice),
+                                product.name,
+                                (String paymentId) async {
+                                  // Close loading dialog
+                                  Navigator.pop(context);
+                                  
+                                  // Submit order with the payment ID from Razorpay
+                                  await _apiService.submitOrder(userId, product.id, paymentId);
+                                  
+                                  ScaffoldMessenger.of(context).showSnackBar(
+                                    SnackBar(
+                                      content: Text('Order placed successfully!'),
+                                      backgroundColor: Colors.green[700],
+                                    ),
+                                  );
+                                  
+                                  // Navigate to home or order confirmation screen
+                                  Navigator.pushReplacement(
+                                    context,
+                                    MaterialPageRoute(
+                                      builder: (context) => MainScreen(initialIndex: 0),
+                                    ),
+                                  );
+                                },
+                                (String errorMessage) {
+                                  // Close loading dialog if still showing
+                                  if (Navigator.canPop(context)) {
+                                    Navigator.pop(context);
+                                  }
+                                  
+                                  ScaffoldMessenger.of(context).showSnackBar(
+                                    SnackBar(
+                                      content: Text('Payment failed: $errorMessage'),
+                                      backgroundColor: Colors.red,
+                                    ),
+                                  );
+                                }
                               );
                             } catch (error) {
+                              // Close loading dialog if still showing
+                              if (Navigator.canPop(context)) {
+                                Navigator.pop(context);
+                              }
+                              
                               ScaffoldMessenger.of(context).showSnackBar(
                                 SnackBar(
-                                  content: Text('Failed to submit order: $error'),
+                                  content: Text('Error: $error'),
                                   backgroundColor: Colors.red,
                                 ),
                               );

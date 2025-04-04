@@ -83,7 +83,7 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
               title: Row(
                 children: [
                   Container(
-                    padding: const EdgeInsets.all(8),
+                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
                     decoration: BoxDecoration(
                       gradient: LinearGradient(
                         colors: [Colors.green.shade300, Colors.green.shade700],
@@ -105,7 +105,6 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
                   ),
                   const Spacer(),
                   Container(
-                    margin: const EdgeInsets.only(right: 8),
                     child: Stack(
                       children: [
                         IconButton(
@@ -190,7 +189,6 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
                                 itemBuilder: (context, index) {
                                   final slider = sliders[index];
                                   final imageUrl = "https://plant-world.actthost.com/uploads/homesliders/${slider.image}";
-                                  print('Banner Image URL: $imageUrl'); // Print the banner image URL
                                   return Container(
                                     margin: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
                                     decoration: BoxDecoration(
@@ -674,8 +672,8 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
                           final product = snapshot.data![index];
 
                           // Calculate the discount percentage
-                          double originalPrice = double.tryParse(product.price) ?? 0;
-                          double discountedPrice = double.tryParse(product.discountedPrice) ?? 0;
+                          double originalPrice = double.tryParse(product.price ?? '0') ?? 0;
+                          double discountedPrice = double.tryParse(product.discountedPrice ?? '0') ?? 0;
                           String discountText = "";
                           
                           if (originalPrice > 0 && discountedPrice < originalPrice) {
@@ -690,9 +688,9 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
                                 context,
                                 MaterialPageRoute(
                                   builder: (context) => ProductDetailScreen(
-                                    categoryId: product.categoryId,
-                                    subcategoryId: product.subcategoryId,
-                                    productId: product.id,
+                                    categoryId: int.parse(product.categoryId.toString()),
+                                    subcategoryId: int.parse(product.subcategoryId.toString()),
+                                    productId: int.parse(product.id.toString()),
                                   ),
                                 ),
                               );
@@ -791,7 +789,7 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
                                       children: [
                                         // Product Name
                                         Text(
-                                          product.name,
+                                          product.name ?? 'Unnamed Product',
                                           style: TextStyle(
                                             color: Colors.green.shade800,
                                             fontWeight: FontWeight.bold,
@@ -801,7 +799,7 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
                                         const SizedBox(height: 4),
                                         // Price
                                         Text(
-                                          '\$${double.parse(product.price).toStringAsFixed(2)}',
+                                          '\₹${double.parse(product.price ?? '0').toStringAsFixed(2)}',
                                           style: TextStyle(
                                             color: Colors.grey.shade600,
                                             fontSize: 14,
@@ -811,7 +809,7 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
                                         // Discount Price
                                         if (product.discountedPrice != null)
                                           Text(
-                                            '\$${double.parse(product.discountedPrice).toStringAsFixed(2)}',
+                                            '\₹${double.parse(product.discountedPrice ?? '0').toStringAsFixed(2)}',
                                             style: TextStyle(
                                               color: Colors.green.shade700,
                                               fontWeight: FontWeight.bold,
@@ -838,7 +836,7 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
                                               Text(
                                                 maxLines: 1,
                                                 overflow: TextOverflow.ellipsis,
-                                                product.catName,
+                                                product.catName ?? 'Uncategorized',
                                                 style: TextStyle(
                                                   color: Colors.green.shade700,
                                                   fontSize: 8,
@@ -868,22 +866,26 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
     );
   }
   
-  // Add this method to handle auto-scrolling
+  // Fix the auto-scroll method to properly handle page count
   void _startAutoScroll() {
     Future.delayed(const Duration(seconds: 5), () {
       if (mounted) {
-        final nextPage = (_currentBannerIndex + 1) % (_pageController.positions.isNotEmpty 
-            ? _pageController.position.viewportDimension ~/ _pageController.position.viewportDimension 
-            : 1);
-        
-        _pageController.animateToPage(
-          nextPage,
-          duration: const Duration(milliseconds: 800),
-          curve: Curves.easeInOut,
-        );
-        
-        // Continue auto-scrolling
-        _startAutoScroll();
+        // Get the total number of pages from the FutureBuilder data
+        _sliders.then((sliders) {
+          if (sliders.isNotEmpty && _pageController.hasClients) {
+            final int totalPages = sliders.length;
+            final int nextPage = (_currentBannerIndex + 1) % totalPages;
+            
+            _pageController.animateToPage(
+              nextPage,
+              duration: const Duration(milliseconds: 800),
+              curve: Curves.easeInOut,
+            );
+          }
+          
+          // Continue auto-scrolling
+          _startAutoScroll();
+        });
       }
     });
   }
@@ -894,18 +896,10 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
       // Get cart items from API service
       final cartItems = await ApiService().getCart();
       
-      // Check if cartItems is a List and not null
-      if (cartItems is List) {
-        // Update cart count with the actual number of items
-        setState(() {
-          _cartItemCount = cartItems.length;
-        });
-      } else {
-        // If cartItems is not a List or is null, set count to 0
-        setState(() {
-          _cartItemCount = 0;
-        });
-      }
+      // Directly update cart count with the length of cartItems
+      setState(() {
+        _cartItemCount = cartItems.length; // This assumes cartItems is always a List
+      });
     } catch (e) {
       print('Error fetching cart count: $e');
       // In case of error, set cart count to 0

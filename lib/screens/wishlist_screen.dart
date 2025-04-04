@@ -153,7 +153,7 @@ class _WishlistScreenState extends State<WishlistScreen> {
                     : 'My Wishlist',
                 style: TextStyle(
                   fontWeight: FontWeight.bold,
-                  fontSize: 22,
+                  fontSize: 20,
                   color: primaryColor,
                   letterSpacing: 0.3,
                 ),

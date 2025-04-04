@@ -11,13 +11,13 @@ class ProductDetail {
   final String productCode;
   final String price;
   final String discountedPrice;
-  final int? stone;
+  final String? stone;
   final String? weight;
   final int isFeature;
   final String catName;
   final String subcatName;
-  final DateTime createdAt;
-  final DateTime updatedAt;
+  final String createdAt;
+  final String updatedAt;
   final String cname;
 
   ProductDetail({
@@ -45,26 +45,26 @@ class ProductDetail {
 
   factory ProductDetail.fromJson(Map<String, dynamic> json) {
     return ProductDetail(
-      id: json['id'],
-      name: json['name'],
-      categoryId: json['category_id'],
-      subcategoryId: json['subcategory_id'],
-      image: json['image'],
-      otherImage: json['other_image'],
-      description: json['description'],
-      shortDesc: json['short_desc'],
-      status: json['status'],
-      productCode: json['product_code'],
-      price: json['price'],
-      discountedPrice: json['discounted_price'],
-      stone: json['stone'],
-      weight: json['weight'],
-      isFeature: json['is_feature'],
-      catName: json['cat_name'],
-      subcatName: json['subcat_name'],
-      createdAt: DateTime.parse(json['created_at']),
-      updatedAt: DateTime.parse(json['updated_at']),
-      cname: json['cname'],
+      id: json['id'] ?? 0,
+      name: json['name'] ?? '',
+      categoryId: int.tryParse(json['category_id']?.toString() ?? '0') ?? 0,
+      subcategoryId: int.tryParse(json['subcategory_id']?.toString() ?? '0') ?? 0,
+      image: json['image'] ?? '',
+      otherImage: json['other_image'] ?? '',
+      description: json['description'] ?? '',
+      shortDesc: json['short_desc'] ?? '',
+      status: int.tryParse(json['status']?.toString() ?? '0') ?? 0,
+      productCode: json['product_code'] ?? '',
+      price: json['price'] ?? '0',
+      discountedPrice: json['discounted_price'] ?? '0',
+      stone: json['stone']?.toString(),
+      weight: json['weight']?.toString(),
+      isFeature: int.tryParse(json['is_feature']?.toString() ?? '0') ?? 0,
+      catName: json['cat_name'] ?? '',
+      subcatName: json['subcat_name'] ?? '',
+      createdAt: json['created_at'] ?? '',
+      updatedAt: json['updated_at'] ?? '',
+      cname: json['cname'] ?? '',
     );
   }
 } 

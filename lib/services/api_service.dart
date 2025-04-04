@@ -134,7 +134,7 @@ class ApiService {
   }
 
   Future<List<Product>> fetchProductsBySubCategory(int subCategoryId) async {
-    final response = await http.post(Uri.parse('https://skm-mart.actthost.com/api/ProductBySubCategorieId?category_id=$subCategoryId'));
+    final response = await http.post(Uri.parse('$_baseUrl/ProductBySubCategorieId?category_id=$subCategoryId'));
 
     if (response.statusCode == 200) {
       final data = json.decode(response.body);
@@ -151,19 +151,46 @@ class ApiService {
   }
 
   Future<ProductDetail> fetchProductById(int categoryId, int subcategoryId, int id) async {
-    final response = await http.post(
-      Uri.parse('https://skm-mart.actthost.com/api/ProductById?category_id=$categoryId&subcategory_id=$subcategoryId&id=$id'),
-    );
+    try {
+      print('Fetching product with ID: $id, categoryId: $categoryId, subcategoryId: $subcategoryId');
+      
+      // Ensure all parameters are valid integers
+      final validCategoryId = categoryId > 0 ? categoryId : 0;
+      final validSubcategoryId = subcategoryId > 0 ? subcategoryId : 0;
+      final validProductId = id > 0 ? id : 0;
+      
+      final response = await http.post(
+        Uri.parse('$_baseUrl/ProductById?category_id=$validCategoryId&subcategory_id=$validSubcategoryId&id=$validProductId'),
+      );
 
-    if (response.statusCode == 200) {
-      final data = json.decode(response.body);
-      if (!data['error']) {
-        return ProductDetail.fromJson(data['product'][0]);
+      if (response.statusCode == 200) {
+        final data = json.decode(response.body);
+        print('API Response: ${response.body}');
+        
+        if (!data['error'] && data['product'] != null && (data['product'] as List).isNotEmpty) {
+          // Add null safety checks when creating the ProductDetail object
+          final productData = data['product'][0];
+          
+          // Check if any required fields are null before parsing
+          if (productData == null) {
+            throw Exception('Product data is null');
+          }
+          
+          try {
+            return ProductDetail.fromJson(productData);
+          } catch (e) {
+            print('Error parsing product data: $e');
+            throw Exception('Error parsing product data: $e');
+          }
+        } else {
+          throw Exception('Product not found or empty product data');
+        }
       } else {
-        throw Exception('Failed to load product details');
+        throw Exception('Failed to load product details: ${response.statusCode}');
       }
-    } else {
-      throw Exception('Failed to load product details');
+    } catch (e) {
+      print('Error in fetchProductById: $e');
+      throw Exception('Failed to load product: $e');
     }
   }
 
@@ -270,29 +297,48 @@ class ApiService {
   }
 
   Future<List<CartItem>> getCart() async {
-    final SharedPreferences prefs = await SharedPreferences.getInstance();
-    final int userId = prefs.getInt('id') ?? 0;
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      final userId = prefs.getInt('id') ?? 0;
+      
+      final response = await http.post(
+        Uri.parse('$_baseUrl/getCart'),
+        headers: {'Content-Type': 'application/json'},
+        body: json.encode({'user_id': userId}),
+      );
 
-    final response = await http.post(
-      Uri.parse('$_baseUrl/getCart'),
-      headers: {'Content-Type': 'application/json'},
-      body: json.encode({'user_id': userId}),
-    );
-
-    print('Response status: ${response.statusCode}');
-    print('Response body: ${response.body}');
-
-    if (response.statusCode == 200) {
-      final data = json.decode(response.body);
-      if (!data['error']) {
-        return (data['data'] as List)
-            .map((itemJson) => CartItem.fromJson(itemJson))
-            .toList();
+      print('Response status: ${response.statusCode}');
+      print('Response body: ${response.body}');
+      
+      if (response.statusCode == 200) {
+        // Check if the response contains cart items
+        if (response.body.isNotEmpty && response.body != '[]') {
+          final data = json.decode(response.body);
+          if (!data['error'] && data.containsKey('data') && data['data'] != null) {
+            // If data is a list, process it normally
+            if (data['data'] is List) {
+              return (data['data'] as List)
+                  .map((item) => CartItem.fromJson(item))
+                  .toList();
+            } else {
+              // If data is not a list, return an empty list
+              return [];
+            }
+          } else {
+            // If there's no data or it's null, return an empty list
+            return [];
+          }
+        } else {
+          // If the response body is empty, return an empty list
+          return [];
+        }
       } else {
-        throw Exception('Failed to load cart: ${data['message']}');
+        throw Exception('Failed to load cart');
       }
-    } else {
-      throw Exception('Failed to load cart');
+    } catch (e) {
+      print('Error fetching cart count: $e');
+      // Return an empty list on error
+      return [];
     }
   }
 
@@ -369,7 +415,7 @@ class ApiService {
     }
   }
 
-  Future<void> submitOrder(int userId, int productId, int paymentId) async {
+  Future<bool> submitOrder(int userId, int productId, String paymentId) async {
     final response = await http.post(
       Uri.parse('https://plant-world.actthost.com/api/submitOrderData'),
       headers: {'Content-Type': 'application/json'},
@@ -380,11 +426,12 @@ class ApiService {
       }),
     );
 
-    if (response.statusCode == 200||response.statusCode == 201) {
+    if (response.statusCode == 200 || response.statusCode == 201) {
       final data = json.decode(response.body);
       if (data['error']) {
         throw Exception('Failed to submit order: ${data['message']}');
       }
+      return true; // Return true to indicate success
     } else {
       throw Exception('Failed to submit order: ${response.body}');
     }
@@ -441,6 +488,33 @@ class ApiService {
       }
     } else {
       throw Exception('Failed to load products');
+    }
+  }
+
+  Future<bool> updateCartItemQuantity(int userId, int productId, int quantity) async {
+    try {
+      final response = await http.post(
+        Uri.parse('$_baseUrl/updateCart'),
+        headers: {'Content-Type': 'application/x-www-form-urlencoded'},
+        body: {
+          'user_id': userId.toString(),
+          'product_id': productId.toString(),
+          'quantity': quantity.toString(),
+        },
+      );
+
+      if (response.statusCode == 200) {
+        final data = json.decode(response.body);
+        if (!data['error']) {
+          return true;
+        }
+        return false;
+      } else {
+        return false;
+      }
+    } catch (e) {
+      print('Error updating cart quantity: $e');
+      return false;
     }
   }
 }
